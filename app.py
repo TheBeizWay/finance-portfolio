@@ -274,8 +274,41 @@ with tab4:
         "Budget ($)": np.random.randint(50000, 500000, 6),
         "Actual ($)": np.random.randint(45000, 520000, 6)
     })
-    gl_data["Variance ($)"] = gl_data["Budget ($)"] - gl_data["Actual ($)"]
-    gl_data["Variance %"] = ((gl_data["Variance ($)"] / gl_data
+        gl_data["Variance ($)"] = gl_data["Budget ($)"] - gl_data["Actual ($)"]
+    gl_data["Variance %"] = (
+        (gl_data["Variance ($)"] / gl_data["Budget ($)"]) * 100
+    ).round(1)
+    gl_data["Status"] = gl_data["Variance %"].apply(
+        lambda x: "Over Budget" if x < -5 else ("Watch" if x < 0 else "On Track")
+    )
+
+    st.dataframe(gl_data, use_container_width=True)
+
+    over = gl_data[gl_data["Status"] == "Over Budget"]
+    if len(over) > 0:
+        st.warning(f"{len(over)} GL account(s) are over budget — review required")
+    else:
+        st.success("All GL accounts within budget tolerance")
+
+    st.subheader("What This Dashboard Shows")
+    st.markdown("""
+    This financial control dashboard gives a Finance Manager a single view of:
+    - **Month-end close progress** — which reconciliations are done, in progress or have issues
+    - **GL variance analysis** — which accounts are tracking over or under budget
+    - **Control accountability** — who owns each item and when it was last updated
+
+    In a real environment this would connect to your ERP or accounting system 
+    (Xero, SAP, TechOne) and refresh automatically. This prototype uses 
+    generated data to demonstrate the logic and layout.
+    """)
+
+st.divider()
+st.caption(
+    "Purav Mehta CA · Finance Manager Toolkit · "
+    "Built with Python, Pandas, NumPy and Streamlit · "
+    "thebeizway.com.au · Demonstration purposes only"
+)
+
 
 
 
