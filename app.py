@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-from datetime import datetime
 
 st.set_page_config(
     page_title="Finance Manager Toolkit | Purav Mehta CA",
@@ -19,12 +18,12 @@ tab1, tab2, tab3, tab4 = st.tabs([
     "📋 Financial Control Dashboard"
 ])
 
-# TAB 1 — BUDGET & COST MODEL
 with tab1:
     st.header("Budget & Cost Intelligence Model")
     st.caption("Risk-adjusted forecasting for program and divisional planning.")
 
     col1, col2 = st.columns([1, 2])
+
     with col1:
         st.subheader("Parameters")
         dept = st.selectbox("Department", ["Operations", "Projects", "Corporate Services", "ICT", "Finance"])
@@ -57,7 +56,7 @@ with tab1:
         elif variance_pct < 5:
             st.warning(f"Within {variance_pct:.1f}% of approved budget — monitor closely")
         else:
-            st.success(f"${variance:,.0f} headroom remaining — within acceptable tolerance")
+            st.success(f"${variance:,.0f} headroom remaining — within tolerance")
 
         st.subheader("Cost Breakdown")
         breakdown = pd.DataFrame({
@@ -77,10 +76,9 @@ with tab1:
         })
         st.line_chart(burn_df.set_index("Month"))
 
-# TAB 2 — AP/AR ANOMALY DETECTOR
 with tab2:
     st.header("AP/AR Anomaly Detection")
-    st.caption("Flags duplicate invoices, segregation of duty breaches, threshold circumvention and overdue AR.")
+    st.caption("Flags duplicate invoices, segregation of duty breaches and overdue receivables.")
 
     np.random.seed(42)
     n = 60
@@ -135,7 +133,6 @@ with tab2:
 | Overdue >30 Days | Medium | Contact vendor — check dispute or processing error |
     """)
 
-# TAB 3 — PAYROLL COMPLIANCE
 with tab3:
     st.header("Payroll Compliance Checker")
     st.caption("Flags superannuation obligations, PAYG withholding issues and leave liability risks.")
@@ -210,7 +207,6 @@ with tab3:
     })
     st.dataframe(summary, use_container_width=True)
 
-# TAB 4 — FINANCIAL CONTROL DASHBOARD
 with tab4:
     st.header("Financial Control Dashboard")
     st.caption("Month-end close status, GL variance flags and reconciliation tracker.")
@@ -235,11 +231,12 @@ with tab4:
             8, p=[0.5, 0.25, 0.125, 0.125]
         ),
         "Responsible": np.random.choice(
-            ["Finance Manager", "AP Officer", "AR Officer", "Payroll Officer"],
-            8
+            ["Finance Manager", "AP Officer", "AR Officer", "Payroll Officer"], 8
         ),
-        "Last Updated": pd.date_range("2026-01-20", periods=8, freq="D").strftime("%d %b %Y"),
-        "Variance ($)": np.random.choice([0, 0, 0, 150, -320, 1200, -45, 0], 8)
+        "Last Updated": pd.date_range(
+            "2026-01-20", periods=8, freq="D"
+        ).strftime("%d %b %Y"),
+        "Variance ($)": [0, 150, -320, 0, 1200, -45, 0, 0]
     })
 
     complete = len(recon_data[recon_data["Status"] == "Complete"])
@@ -251,8 +248,7 @@ with tab4:
     c1.metric("Month-End Close", f"{close_pct}% Complete")
     c2.metric("Items Complete", complete)
     c3.metric("In Progress", in_progress)
-    c4.metric("Issues Found", issues, delta=f"{issues} need attention",
-              delta_color="inverse" if issues > 0 else "normal")
+    c4.metric("Issues Found", issues)
 
     if issues > 0:
         st.error(f"{issues} control item(s) have issues — resolve before period close")
@@ -271,10 +267,11 @@ with tab4:
     ]
     gl_data = pd.DataFrame({
         "GL Account": gl_accounts,
-        "Budget ($)": np.random.randint(50000, 500000, 6),
-        "Actual ($)": np.random.randint(45000, 520000, 6)
+        "Budget ($)": [250000, 480000, 45000, 120000, 95000, 380000],
+        "Actual ($)": [267000, 475000, 52000, 118000, 103000, 371000]
     })
-        gl_data["Variance ($)"] = gl_data["Budget ($)"] - gl_data["Actual ($)"]
+
+    gl_data["Variance ($)"] = gl_data["Budget ($)"] - gl_data["Actual ($)"]
     gl_data["Variance %"] = (
         (gl_data["Variance ($)"] / gl_data["Budget ($)"]) * 100
     ).round(1)
@@ -284,30 +281,8 @@ with tab4:
 
     st.dataframe(gl_data, use_container_width=True)
 
-    over = gl_data[gl_data["Status"] == "Over Budget"]
-    if len(over) > 0:
-        st.warning(f"{len(over)} GL account(s) are over budget — review required")
-    else:
-        st.success("All GL accounts within budget tolerance")
+    over = gl_data
 
-    st.subheader("What This Dashboard Shows")
-    st.markdown("""
-    This financial control dashboard gives a Finance Manager a single view of:
-    - **Month-end close progress** — which reconciliations are done, in progress or have issues
-    - **GL variance analysis** — which accounts are tracking over or under budget
-    - **Control accountability** — who owns each item and when it was last updated
-
-    In a real environment this would connect to your ERP or accounting system 
-    (Xero, SAP, TechOne) and refresh automatically. This prototype uses 
-    generated data to demonstrate the logic and layout.
-    """)
-
-st.divider()
-st.caption(
-    "Purav Mehta CA · Finance Manager Toolkit · "
-    "Built with Python, Pandas, NumPy and Streamlit · "
-    "thebeizway.com.au · Demonstration purposes only"
-)
 
 
 
