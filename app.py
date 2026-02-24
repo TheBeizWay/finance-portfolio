@@ -90,8 +90,8 @@ with tab2:
         "Invoice #": [f"INV-{1000+i}" for i in range(n)],
         "Vendor": np.random.choice(vendors, n),
         "Amount ($)": np.random.choice([
-            500, 1000, 5000, 10000, 2347, 8921, 1000, 500,
-            10000, 3456, 7500, 15000, 250, 9999, 4500
+            500, 1000, 5000, 10000, 2347, 8921,
+            1000, 500, 10000, 3456, 7500, 15000, 250, 9999, 4500
         ], n),
         "Status": np.random.choice(["Paid", "Pending", "Overdue"], n, p=[0.6, 0.25, 0.15]),
         "Approved By": np.random.choice(
@@ -105,7 +105,9 @@ with tab2:
     ap_data.loc[ap_data.duplicated(subset=["Vendor", "Amount ($)"], keep=False), "Flag"] = "Duplicate Risk"
     ap_data.loc[ap_data["Approved By"] == "Self-Approved", "Flag"] = "No Segregation of Duties"
     ap_data.loc[ap_data["Amount ($)"] == 9999, "Flag"] = "Just-Below-Threshold"
-    ap_data.loc[(ap_data["Status"] == "Overdue") & (ap_data["Days Overdue"] > 30), "Flag"] = "Overdue >30 Days"
+    ap_data.loc[
+        (ap_data["Status"] == "Overdue") & (ap_data["Days Overdue"] > 30), "Flag"
+    ] = "Overdue >30 Days"
 
     flagged = ap_data[ap_data["Flag"] != ""]
 
@@ -144,7 +146,10 @@ with tab3:
 
     payroll = pd.DataFrame({
         "Employee ID": [f"EMP-{100+i}" for i in range(n_emp)],
-        "Type": np.random.choice(["Full-Time", "Part-Time", "Casual", "Contractor"], n_emp, p=[0.5, 0.2, 0.2, 0.1]),
+        "Type": np.random.choice(
+            ["Full-Time", "Part-Time", "Casual", "Contractor"],
+            n_emp, p=[0.5, 0.2, 0.2, 0.1]
+        ),
         "Gross Pay ($)": np.random.randint(3000, 12000, n_emp),
         "PAYG Withheld ($)": np.random.randint(500, 3500, n_emp),
         "Super Paid ($)": np.random.randint(200, 1200, n_emp),
@@ -153,8 +158,12 @@ with tab3:
     })
 
     payroll["Super Required ($)"] = (payroll["Gross Pay ($)"] * super_rate).round(2)
-    payroll["Super Variance ($)"] = (payroll["Super Paid ($)"] - payroll["Super Required ($)"]).round(2)
-    payroll["Tax Rate (%)"] = (payroll["PAYG Withheld ($)"] / payroll["Gross Pay ($)"] * 100).round(1)
+    payroll["Super Variance ($)"] = (
+        payroll["Super Paid ($)"] - payroll["Super Required ($)"]
+    ).round(2)
+    payroll["Tax Rate (%)"] = (
+        payroll["PAYG Withheld ($)"] / payroll["Gross Pay ($)"] * 100
+    ).round(1)
 
     payroll["Flag"] = ""
     payroll.loc[payroll["Super Variance ($)"] < -50, "Flag"] = "Super Underpaid"
@@ -187,7 +196,10 @@ with tab3:
 
     st.subheader("Payroll Summary")
     summary = pd.DataFrame({
-        "Item": ["Total Gross Pay", "Total PAYG Withheld", "Total Super Required", "Total Super Paid", "Super Variance"],
+        "Item": [
+            "Total Gross Pay", "Total PAYG Withheld",
+            "Total Super Required", "Total Super Paid", "Super Variance"
+        ],
         "Amount ($)": [
             payroll["Gross Pay ($)"].sum(),
             payroll["PAYG Withheld ($)"].sum(),
@@ -206,14 +218,64 @@ with tab4:
     np.random.seed(99)
 
     recon_items = [
-        "Bank Reconciliation", "Accounts Payable Ledger", "Accounts Receivable Ledger",
-        "Payroll Clearing Account", "GST/BAS Reconciliation",
-        "Fixed Assets Register", "Intercompany Accounts", "Prepayments & Accruals"
+        "Bank Reconciliation",
+        "Accounts Payable Ledger",
+        "Accounts Receivable Ledger",
+        "Payroll Clearing Account",
+        "GST/BAS Reconciliation",
+        "Fixed Assets Register",
+        "Intercompany Accounts",
+        "Prepayments & Accruals"
     ]
 
     recon_data = pd.DataFrame({
         "Control Item": recon_items,
-        "Status": np.random.choice(["Complete", "In Progress", "Not Started", "Issues Found"], 8, p=[0.5, 0.25, 0.125, 0.125]),
-        "Responsible": np.random.choice(["Finance Manager", "AP Officer", "AR Officer", "Payroll Officer"], 8
+        "Status": np.random.choice(
+            ["Complete", "In Progress", "Not Started", "Issues Found"],
+            8, p=[0.5, 0.25, 0.125, 0.125]
+        ),
+        "Responsible": np.random.choice(
+            ["Finance Manager", "AP Officer", "AR Officer", "Payroll Officer"],
+            8
+        ),
+        "Last Updated": pd.date_range("2026-01-20", periods=8, freq="D").strftime("%d %b %Y"),
+        "Variance ($)": np.random.choice([0, 0, 0, 150, -320, 1200, -45, 0], 8)
+    })
+
+    complete = len(recon_data[recon_data["Status"] == "Complete"])
+    issues = len(recon_data[recon_data["Status"] == "Issues Found"])
+    in_progress = len(recon_data[recon_data["Status"] == "In Progress"])
+    close_pct = int((complete / len(recon_data)) * 100)
+
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Month-End Close", f"{close_pct}% Complete")
+    c2.metric("Items Complete", complete)
+    c3.metric("In Progress", in_progress)
+    c4.metric("Issues Found", issues, delta=f"{issues} need attention",
+              delta_color="inverse" if issues > 0 else "normal")
+
+    if issues > 0:
+        st.error(f"{issues} control item(s) have issues — resolve before period close")
+    elif close_pct < 100:
+        st.warning(f"Month-end close is {close_pct}% complete — {8 - complete} items remaining")
+    else:
+        st.success("All control items complete — period close ready")
+
+    st.subheader("Reconciliation Status")
+    st.dataframe(recon_data, use_container_width=True)
+
+    st.subheader("GL Variance Analysis")
+    gl_accounts = [
+        "Operating Expenses", "Staff Costs", "Travel & Subsistence",
+        "IT & Communications", "Professional Services", "Revenue"
+    ]
+    gl_data = pd.DataFrame({
+        "GL Account": gl_accounts,
+        "Budget ($)": np.random.randint(50000, 500000, 6),
+        "Actual ($)": np.random.randint(45000, 520000, 6)
+    })
+    gl_data["Variance ($)"] = gl_data["Budget ($)"] - gl_data["Actual ($)"]
+    gl_data["Variance %"] = ((gl_data["Variance ($)"] / gl_data
+
 
 
